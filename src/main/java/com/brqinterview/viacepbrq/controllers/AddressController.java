@@ -10,7 +10,6 @@ import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -37,7 +36,7 @@ public class AddressController {
             @ApiResponse(code = 500, message = "Internal Server Error", response = ErrorDetails.class)
     })
     public ResponseEntity<?> getAddressByCep(@PathVariable String cep) {
-        log.debug("Agora vai");
+//        log.debug("Agora vai");
         try {
             CompletableFuture<Address> addressFuture = addressService.getAddressByCep(cep, 0);
             Address result = addressFuture.join();

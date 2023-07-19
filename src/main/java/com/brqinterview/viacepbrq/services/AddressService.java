@@ -38,9 +38,8 @@ public class AddressService {
 
     @Async
     public CompletableFuture<Address> getAddressByCep(String cep, int retryCount) {
-        var cepFormat = CepFormatter.formatCep(cep);
 
-        CompletableFuture<Address> viaCepFuture = CompletableFuture.supplyAsync(() -> getViaCepAddress(cepFormat))
+        CompletableFuture<Address> viaCepFuture = CompletableFuture.supplyAsync(() -> getViaCepAddress(cep))
                 .exceptionally(ex -> {
                     // Tratamento de exceção para a chamada do serviço ViaCep
                     if (ex.getCause() instanceof HttpClientErrorException) {
@@ -56,7 +55,7 @@ public class AddressService {
                     System.err.println("Exceção na chamada do serviço ViaCep: " + ex);
                     return null;
                 });
-        CompletableFuture<Address> apiCepFuture = CompletableFuture.supplyAsync(() -> getApiCepAddress(cepFormat))
+        CompletableFuture<Address> apiCepFuture = CompletableFuture.supplyAsync(() -> getApiCepAddress(cep))
                 .exceptionally(ex -> {
                     // Tratamento de exceção para a chamada do serviço ApiCep
                     if (ex.getCause() instanceof HttpClientErrorException) {
@@ -72,7 +71,7 @@ public class AddressService {
                     System.err.println("Exceção na chamada do serviço ApiCep: " + ex);
                     return null;
                 });
-        CompletableFuture<Address> brasilApiFuture = CompletableFuture.supplyAsync(() -> getBrasilApiAddress(cepFormat))
+        CompletableFuture<Address> brasilApiFuture = CompletableFuture.supplyAsync(() -> getBrasilApiAddress(cep))
                 .exceptionally(ex -> {
                     // Tratamento de exceção para a chamada do serviço BrasilApi
                     if (ex.getCause() instanceof HttpClientErrorException) {
