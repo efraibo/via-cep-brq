@@ -5,6 +5,7 @@ import com.brqinterview.viacepbrq.entities.ApiCepResponse;
 import com.brqinterview.viacepbrq.entities.BrasilApiResponse;
 import com.brqinterview.viacepbrq.entities.ViaCepResponse;
 import com.brqinterview.viacepbrq.exceptions.AddressServiceException;
+import com.brqinterview.viacepbrq.utilities.CepUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,6 +17,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 
 @Slf4j
 @Service
@@ -42,75 +44,27 @@ public class AddressService {
     }
 
     @Async
-    public CompletableFuture<Address> getAddressByCep(String cep, int retryCount) throws AddressServiceException {
+    public Address getAddressByCep(String cep, int retryCount) throws AddressServiceException {
+        log.info("Starting the address lookup by CEP");
+        String formatCep = CepUtils.formatCep(cep);
+        var viaCepFuture = getViaCepAddressFuture(formatCep);
+        var apiCepFuture = getApiCepAddressFuture(formatCep);
+        var brazilApiFuture = getBrasilApiAddressFuture(formatCep);
 
-        var viaCepFuture = getViaCepAddressFuture(cep);
-        var apiCepFuture = getApiCepAddressFuture(cep);
-        var brasilApiFuture = getBrasilApiAddressFuture(cep);
-
-        return CompletableFuture.anyOf(viaCepFuture, apiCepFuture, brasilApiFuture)
-                .handle((result, ex) -> {
-
-                    if (ex != null && viaCepFuture.isCompletedExceptionally() && apiCepFuture.isCompletedExceptionally() && brasilApiFuture.isCompletedExceptionally()) {
-                        return retryGetAddressByCep(cep, retryCount + 1);
-                    }
-
-                    if (result != null) {
-                        return CompletableFuture.completedFuture((Address) result);
-                    } else {
-                        return retryGetAddressByCep(cep, retryCount);
-                    }
-                })
-                .thenCompose(result -> (CompletableFuture<Address>) result);
-
+        return getAddressCompletableFuture(formatCep, retryCount, viaCepFuture, apiCepFuture, brazilApiFuture)
+                .join();
     }
 
     private CompletableFuture<Address> getBrasilApiAddressFuture(String cep) {
-        return CompletableFuture.supplyAsync(() -> getBrasilApiAddress(cep))
-                .exceptionally(ex -> {
-                    if (ex.getCause() instanceof HttpClientErrorException httpClientErrorException && httpClientErrorException.getStatusCode() == HttpStatus.TOO_MANY_REQUESTS) {
-                       return null;
-                    }
-
-                    log.error("Exceção na chamada do serviço BrasilApi: " + ex);
-                    return null;
-                });
+        return callApiAsync(() -> getBrasilApiAddress(cep));
     }
 
     private CompletableFuture<Address> getApiCepAddressFuture(String cep) {
-        return CompletableFuture.supplyAsync(() -> getApiCepAddress(cep))
-                .exceptionally(ex -> {
-                    if ((ex.getCause() instanceof HttpClientErrorException httpClientErrorException) && httpClientErrorException.getStatusCode() == HttpStatus.TOO_MANY_REQUESTS) {
-                            return null;
-                    }
-                    log.error("Exceção na chamada do serviço ApiCep: " + ex);
-                    return null;
-                });
+        return callApiAsync(() -> getApiCepAddress(cep));
     }
 
     private CompletableFuture<Address> getViaCepAddressFuture(String cep) {
-        return CompletableFuture.supplyAsync(() -> getViaCepAddress(cep))
-                .exceptionally(ex -> {
-                    // Tratamento de exceção para a chamada do serviço ViaCep
-                    if (ex.getCause() instanceof HttpClientErrorException httpClientErrorException && httpClientErrorException.getStatusCode() == HttpStatus.TOO_MANY_REQUESTS) {
-                        return null;
-                    }
-                    // Trate outros erros conforme necessário
-                    log.error("Exceção na chamada do serviço ViaCep: " + ex);
-                    return null;
-                });
-    }
-
-    private <T> Address getAddressFromApi(String url, Class<T> responseType) {
-        T response = restTemplate.getForObject(url, responseType);
-
-        if (response != null) {
-            Address address = modelMapper.map(response, Address.class);
-            address.setPais("Brasil");
-            return address;
-        }
-
-        return null;
+        return callApiAsync(() -> getViaCepAddress(cep));
     }
 
     private Address getViaCepAddress(String cep) {
@@ -131,11 +85,55 @@ public class AddressService {
         return getAddressFromApi(url, BrasilApiResponse.class);
     }
 
+    private CompletableFuture<Address> getAddressCompletableFuture(String cep, int retryCount, CompletableFuture<Address> viaCepFuture, CompletableFuture<Address> apiCepFuture, CompletableFuture<Address> brasilApiFuture) {
+        CompletableFuture<Address> anyOfFuture = CompletableFuture.anyOf(viaCepFuture, apiCepFuture, brasilApiFuture)
+                .handle((result, ex) -> {
+
+                    if (ex != null && viaCepFuture.isCompletedExceptionally() && apiCepFuture.isCompletedExceptionally() && brasilApiFuture.isCompletedExceptionally()) {
+                        return retryGetAddressByCep(cep, retryCount + 1);
+                    }
+
+                    if (result != null) {
+                        log.info("Success execution.");
+                        return CompletableFuture.completedFuture((Address) result);
+                    } else {
+                        log.info("Executing retry for the {} time.", retryCount + 1);
+                        return retryGetAddressByCep(cep, retryCount);
+                    }
+                })
+                .thenCompose(result -> (CompletableFuture<Address>) result);
+
+        return anyOfFuture;
+    }
+
+    private <T> CompletableFuture<T> callApiAsync(Supplier<T> serviceSupplier) {
+        return CompletableFuture.supplyAsync(serviceSupplier)
+                .exceptionally(ex -> {
+                    if (ex.getCause() instanceof HttpClientErrorException httpClientErrorException &&
+                            httpClientErrorException.getStatusCode() == HttpStatus.TOO_MANY_REQUESTS) {
+                        return null;
+                    }
+                    log.error("Exception during API call: " + ex);
+                    return null;
+                });
+    }
+
+    private <T> Address getAddressFromApi(String url, Class<T> responseType) {
+        T response = restTemplate.getForObject(url, responseType);
+
+        if (response != null) {
+            Address address = modelMapper.map(response, Address.class);
+            address.setPais("Brasil");
+            return address;
+        }
+
+        return null;
+    }
 
     private CompletableFuture<Address> retryGetAddressByCep(String cep, int retryCount) throws AddressServiceException {
         if (retryCount >= limitRetry) {
-            log.error("Falha ao obter o endereço por CEP após 5 tentativas.");
-            throw new AddressServiceException("Falha ao obter o endereço por CEP após 5 tentativas.");
+            log.error("Failed to get the address by CEP after 5 attempts.");
+            throw new AddressServiceException("Failed to get the address by CEP after 5 attempts.");
         }
 
         try {
@@ -144,7 +142,6 @@ public class AddressService {
             Thread.currentThread().interrupt();
         }
 
-        // Chamar getAddressByCep novamente com o número de tentativas atualizado
-        return getAddressByCep(cep, retryCount + 1);
+        return CompletableFuture.completedFuture(getAddressByCep(cep, retryCount + 1));
     }
 }

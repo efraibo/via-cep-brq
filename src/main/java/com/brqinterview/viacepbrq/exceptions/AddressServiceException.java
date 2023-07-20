@@ -6,11 +6,11 @@ public class AddressServiceException extends RuntimeException {
         super();
     }
 
-    public AddressServiceException(String mensagem) {
-        super(mensagem);
+    public AddressServiceException(String message) {
+        super(message);
     }
 
-    public AddressServiceException(String mensagem, Throwable causa) {
-        super(mensagem, causa);
+    public AddressServiceException(String message, Throwable causa) {
+        super(message, causa);
     }
 }

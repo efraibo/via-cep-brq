@@ -1,9 +1,9 @@
-package com.brqinterview.viacepbrq;
+package com.brqinterview.viacepbrq.controllers;
 
 import com.brqinterview.viacepbrq.entities.Address;
-import com.brqinterview.viacepbrq.services.AddressService;
+import com.brqinterview.viacepbrq.erros.ErrorDetails;
 import com.brqinterview.viacepbrq.erros.ExceptionHandlerController;
-import com.brqinterview.viacepbrq.controllers.AddressController;
+import com.brqinterview.viacepbrq.services.AddressService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javafaker.Faker;
 import org.junit.jupiter.api.Assertions;
@@ -11,16 +11,17 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.util.concurrent.CompletableFuture;
-
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class AddressControllerTest {
@@ -46,15 +47,13 @@ class AddressControllerTest {
         //given
         String cep = "55500-000";
         Faker faker = new Faker();
-        var addressExpected = new Address();
+        Address addressExpected = new Address();
         String city = faker.address().city();
         addressExpected.setCidade(city);
         addressExpected.setEstado(faker.address().state());
         addressExpected.setPais(faker.address().country());
         addressExpected.setLogradouro(faker.address().streetAddress());
-
-        CompletableFuture<Address> addressFuture = CompletableFuture.completedFuture(addressExpected);
-        when(addressService.getAddressByCep(cep, 0)).thenReturn(addressFuture);
+        Mockito.when(addressService.getAddressByCep(cep, 0)).thenReturn(addressExpected);
 
         //when
         MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.get("/api/Addresses/{cep}", cep))
@@ -66,22 +65,31 @@ class AddressControllerTest {
         String response = mvcResult.getResponse().getContentAsString();
         var addressResponse = objectMapper.readValue(response, Address.class);
 
-        //then
+        // Then
+        assertEquals(addressExpected.getCidade(), addressResponse.getCidade());
+        assertEquals(addressExpected.getEstado(), addressResponse.getEstado());
+        assertEquals(addressExpected.getPais(), addressResponse.getPais());
+        assertEquals(addressExpected.getLogradouro(), addressResponse.getLogradouro());
 
-        Assertions.assertEquals(addressExpected, addressResponse);
+        // Verifique se o método do serviço foi chamado corretamente
+        Mockito.verify(addressService).getAddressByCep(cep, 0);
     }
 
     @Test
-    void testGetAddressByCep_Exception() throws Exception {
-        String cep = "12345-678";
-        CompletableFuture<Address> addressFuture = new CompletableFuture<>();
-        addressFuture.completeExceptionally(new Exception("Test exception"));
+    void testGetAddressByCep_InternalError() throws Exception {
+        // Given
+        String cep = "55500-000";
+        Mockito.when(addressService.getAddressByCep(cep, 0))
+                .thenThrow(new RuntimeException("Simulated internal error"));
 
-        when(addressService.getAddressByCep(cep, 0)).thenReturn(addressFuture);
-
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/Addresses/{cep}", cep))
+        // When
+        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.get("/api/Addresses/{cep}", cep))
                 .andExpect(status().isInternalServerError())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.message").value("Error retrieving address by CEP"));
+                .andReturn();
+
+        // Then
+        String response = mvcResult.getResponse().getContentAsString();
+        assertTrue(response.contains("Internal Server Error"));
     }
 }
