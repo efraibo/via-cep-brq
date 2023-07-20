@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javafaker.Faker;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -15,6 +17,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -38,11 +41,11 @@ class AddressControllerTest {
                 .build();
     }
 
-    @Test
-    void testGetAddressByCep_Success() throws Exception {
+    @ParameterizedTest
+    @CsvSource({"55500000", "55500-000"})
+    void testGetAddressByCep_Success(String cep) throws Exception {
 
         //given
-        String cep = "55500-000";
         Faker faker = new Faker();
         Address addressExpected = new Address();
         String city = faker.address().city();
@@ -76,8 +79,9 @@ class AddressControllerTest {
     void testGetAddressByCep_InternalError() throws Exception {
         // Given
         String cep = "55500-000";
+        final String error_message ="Simulated internal error";
         Mockito.when(addressService.getAddressByCep(cep, 0))
-                .thenThrow(new RuntimeException("Simulated internal error"));
+                .thenThrow(new RuntimeException(error_message));
 
         // When
         MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.get("/api/Addresses/{cep}", cep))
@@ -87,6 +91,6 @@ class AddressControllerTest {
 
         // Then
         String response = mvcResult.getResponse().getContentAsString();
-        assertTrue(response.contains("Internal Server Error"));
+        assertTrue(response.contains(error_message));
     }
 }

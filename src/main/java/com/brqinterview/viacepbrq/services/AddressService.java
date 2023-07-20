@@ -132,7 +132,7 @@ public class AddressService {
 
     private CompletableFuture<Address> retryGetAddressByCep(String cep, int retryCount) throws AddressServiceException {
         if (retryCount >= limitRetry) {
-            log.error("Failed to get the address by CEP after 5 attempts.");
+            log.error("Failed to get the address by CEP after {} attempts.", limitRetry);
             throw new AddressServiceException("Failed to get the address by CEP after 5 attempts.");
         }
 

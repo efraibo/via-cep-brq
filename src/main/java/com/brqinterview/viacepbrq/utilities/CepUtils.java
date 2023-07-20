@@ -5,7 +5,6 @@ public class CepUtils {
         if (cep == null || cep.isEmpty()) {
             return cep;
         }
-
         cep = cep.replaceAll("[^0-9]", "");
 
         if (cep.length() != 8) {
