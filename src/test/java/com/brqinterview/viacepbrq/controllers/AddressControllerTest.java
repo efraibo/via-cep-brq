@@ -1,12 +1,10 @@
 package com.brqinterview.viacepbrq.controllers;
 
 import com.brqinterview.viacepbrq.entities.Address;
-import com.brqinterview.viacepbrq.erros.ErrorDetails;
-import com.brqinterview.viacepbrq.erros.ExceptionHandlerController;
+import com.brqinterview.viacepbrq.erros.CustomExceptionHandler;
 import com.brqinterview.viacepbrq.services.AddressService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javafaker.Faker;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -17,7 +15,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,7 +34,7 @@ class AddressControllerTest {
     public void setUp() {
         MockitoAnnotations.openMocks(this);
         mockMvc = MockMvcBuilders.standaloneSetup(addressController)
-                .setControllerAdvice(new ExceptionHandlerController())
+                .setControllerAdvice(new CustomExceptionHandler())
                 .build();
     }
 
