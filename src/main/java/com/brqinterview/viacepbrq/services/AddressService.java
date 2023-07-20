@@ -23,8 +23,8 @@ import java.util.function.Supplier;
 @Service
 public class AddressService {
 
-    private RestTemplate restTemplate;
-    private ModelMapper modelMapper;
+    private final RestTemplate restTemplate;
+    private final ModelMapper modelMapper;
 
     @Value("${api.url.viacep}")
     private String viaCepUrl;
@@ -86,7 +86,7 @@ public class AddressService {
     }
 
     private CompletableFuture<Address> getAddressCompletableFuture(String cep, int retryCount, CompletableFuture<Address> viaCepFuture, CompletableFuture<Address> apiCepFuture, CompletableFuture<Address> brasilApiFuture) {
-        CompletableFuture<Address> anyOfFuture = CompletableFuture.anyOf(viaCepFuture, apiCepFuture, brasilApiFuture)
+        return CompletableFuture.anyOf(viaCepFuture, apiCepFuture, brasilApiFuture)
                 .handle((result, ex) -> {
 
                     if (ex != null && viaCepFuture.isCompletedExceptionally() && apiCepFuture.isCompletedExceptionally() && brasilApiFuture.isCompletedExceptionally()) {
@@ -101,9 +101,7 @@ public class AddressService {
                         return retryGetAddressByCep(cep, retryCount);
                     }
                 })
-                .thenCompose(result -> (CompletableFuture<Address>) result);
-
-        return anyOfFuture;
+                .thenCompose(result -> result);
     }
 
     private <T> CompletableFuture<T> callApiAsync(Supplier<T> serviceSupplier) {
