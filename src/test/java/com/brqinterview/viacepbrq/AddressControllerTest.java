@@ -1,9 +1,9 @@
 package com.brqinterview.viacepbrq;
 
-import com.brqinterview.viacepbrq.Erros.ExceptionHandlerController;
-import com.brqinterview.viacepbrq.controllers.AddressController;
 import com.brqinterview.viacepbrq.entities.Address;
 import com.brqinterview.viacepbrq.services.AddressService;
+import com.brqinterview.viacepbrq.erros.ExceptionHandlerController;
+import com.brqinterview.viacepbrq.controllers.AddressController;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javafaker.Faker;
 import org.junit.jupiter.api.Assertions;
@@ -23,7 +23,7 @@ import java.util.concurrent.CompletableFuture;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-public class AddressControllerTest {
+class AddressControllerTest {
     @Mock
     private AddressService addressService;
 
@@ -41,7 +41,7 @@ public class AddressControllerTest {
     }
 
     @Test
-    public void testGetAddressByCep_Success() throws Exception {
+    void testGetAddressByCep_Success() throws Exception {
 
         //given
         String cep = "55500-000";
@@ -72,7 +72,7 @@ public class AddressControllerTest {
     }
 
     @Test
-    public void testGetAddressByCep_Exception() throws Exception {
+    void testGetAddressByCep_Exception() throws Exception {
         String cep = "12345-678";
         CompletableFuture<Address> addressFuture = new CompletableFuture<>();
         addressFuture.completeExceptionally(new Exception("Test exception"));

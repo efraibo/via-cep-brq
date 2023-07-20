@@ -1,4 +1,4 @@
-package com.brqinterview.viacepbrq.Erros;
+package com.brqinterview.viacepbrq.erros;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

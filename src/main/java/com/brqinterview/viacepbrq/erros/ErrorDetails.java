@@ -1,4 +1,4 @@
-package com.brqinterview.viacepbrq.Erros;
+package com.brqinterview.viacepbrq.erros;
 
 public class ErrorDetails {
     private String message;
