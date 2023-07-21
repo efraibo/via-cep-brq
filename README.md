@@ -15,7 +15,9 @@ Este projeto é um exemplo de aplicativo de busca de CEP (Código de Endereçame
 1. Baixe o projeto: `git clone https://github.com/efraibo/via-cep-brq.git`
 2. Abra o terminal e navegue até a pasta do projeto.
 3. Execute o comando: `docker-compose up`
-4. Abra o Swagger no navegador através do link: `http://localhost:8080/swagger-ui`
+4. Abra o Swagger no navegador através do link: `http://localhost:8080/swagger-ui/index.html`
+   - User: Admin
+   - Password: via-cep-brq
 
 Observações:
 - Se a aplicação for executada utilizando o Docker, será possível visualizar o dashboard do SonarQube, que está disponível no link: `http://localhost:9000/`. Todas as questões (issues) foram resolvidas e também está disponível o coverage.
