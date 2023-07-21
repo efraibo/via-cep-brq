@@ -2,7 +2,7 @@
 
 Este projeto é um exemplo de aplicativo de busca de CEP (Código de Endereçamento Postal) utilizando a API Via CEP, desenvolvido como parte do processo de entrevista na empresa BRQ.
 
-## Instruções de instalação sem o uso do Docker
+## Instruções de execução sem o uso do Docker
 
 1. Baixe o projeto: `git clone https://github.com/efraibo/via-cep-brq.git`
 2. Abra o terminal e navegue até a pasta do projeto.
@@ -10,7 +10,7 @@ Este projeto é um exemplo de aplicativo de busca de CEP (Código de Endereçame
 4. Inicialize a aplicação com o comando: `java -jar target/via-cep-brq-0.0.1.jar`
 5. Abra o Swagger no navegador através do link: `http://localhost:8080/swagger-ui`
 
-## Instruções de instalação utilizando o Docker
+## Instruções de execução utilizando o Docker
 
 1. Baixe o projeto: `git clone https://github.com/efraibo/via-cep-brq.git`
 2. Abra o terminal e navegue até a pasta do projeto.
